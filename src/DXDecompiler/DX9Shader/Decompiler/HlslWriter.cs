@@ -187,6 +187,7 @@ namespace DXDecompiler.DX9Shader
 					ResultModifier.None => "{0} = {1};",
 					ResultModifier.Saturate => "{0} = saturate({1});",
 					ResultModifier.PartialPrecision => $"{{0}} = /* not implemented _pp modifier */ {{1}};",
+					ResultModifier.Saturate | ResultModifier.PartialPrecision => "{0} = /* saturate+_pp */ saturate({1});",
 					object unknown => ";// error"
 				};
 				var sourceResult = string.Format(sourceFormat, args);
