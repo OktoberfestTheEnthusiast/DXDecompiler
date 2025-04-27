@@ -359,6 +359,37 @@ namespace DXDecompiler.DX9Shader
 					}
 					Indent++;
 					break;
+				case Opcode.BreakC:
+				{
+					string compareOp;
+					switch((IfComparison)instruction.Modifier)
+					{
+						case IfComparison.GT:
+							compareOp = ">";
+							break;
+						case IfComparison.EQ:
+							compareOp = "==";
+							break;
+						case IfComparison.GE:
+							compareOp = ">=";
+							break;
+						case IfComparison.LE:
+							compareOp = "<=";
+							break;
+						case IfComparison.NE:
+							compareOp = "!=";
+							break;
+						case IfComparison.LT:
+							compareOp = "<";
+							break;
+						default:
+							throw new InvalidOperationException();
+					}
+
+					// Write full if (...) break; into a single WriteLine
+					WriteLine("if ({0} {2} {1}) break;", GetSourceName(instruction, 0), GetSourceName(instruction, 1), compareOp);
+					break;
+				}
 				case Opcode.Log:
 					WriteAssignment("log2({0})", GetSourceName(instruction, 1));
 					break;
