@@ -22,7 +22,10 @@ namespace DXDecompiler.DX9Shader
 				var body = Body;
 				if(Literals is not null)
 				{
-					body += string.Format("{0}({1})", Literals.Length, string.Join(", ", Literals));
+					if (Literals.Length == 1)
+						body = Literals[0]; // Emit scalar as plain float
+					else
+						body = $"float{Literals.Length}({string.Join(", ", Literals)})";
 				}
 				body = string.Format(Modifier, body);
 				if(body.All(char.IsDigit))
@@ -195,6 +198,44 @@ namespace DXDecompiler.DX9Shader
 				var swizzleSizes = args.Select(x => x.Swizzle.StartsWith(".") ? x.Swizzle.Trim('.').Length : -1);
 				var returnsScalar = instruction.Opcode.ReturnsScalar() || swizzleSizes.All(x => x == 1);
 
+				// Generalized: Detect scalar output (MaskedLength == 1)
+				bool isScalarOutput = false;
+				if (instruction.HasDestination)
+				{
+					var destKey = instruction.GetParamRegisterKey(instruction.GetDestinationParamIndex());
+					var decl = _registers.RegisterDeclarations.ContainsKey(destKey) ? _registers.RegisterDeclarations[destKey] : null;
+					if (decl != null && decl.MaskedLength == 1)
+					{
+						isScalarOutput = true;
+					}
+				}
+
+				if (isScalarOutput)
+				{
+					for (int i = 0; i < args.Length; i++)
+					{
+						if (args[i].Literals != null && args[i].Literals.Length > 0)
+						{
+							args[i].Literals = new[] { args[i].Literals[0] };
+							args[i].Swizzle = "";
+						}
+						else if (!string.IsNullOrEmpty(args[i].Swizzle) && args[i].Swizzle != ".x")
+						{
+							args[i].Swizzle = ".x";
+						}
+						if (args[i].Body != null && args[i].Body.StartsWith("float"))
+						{
+							var start = args[i].Body.IndexOf('(');
+							var end = args[i].Body.IndexOf(',');
+							if (start >= 0 && end > start)
+							{
+								args[i].Body = args[i].Body.Substring(start + 1, end - start - 1).Trim();
+							}
+						}
+					}
+					sourceResult = string.Format(sourceFormat, args);
+				}
+
 				if(writeMask.Length > 0)
 				{
 					destination += writeMask;
@@ -289,6 +330,7 @@ namespace DXDecompiler.DX9Shader
 					break;
 				case Opcode.Cmp:
 					// TODO: should be per-component
+					// TODO: Handle depth output
 					WriteAssignment("({0} >= 0) ? {1} : {2}",
 						GetSourceName(instruction, 1), GetSourceName(instruction, 2), GetSourceName(instruction, 3));
 					break;
