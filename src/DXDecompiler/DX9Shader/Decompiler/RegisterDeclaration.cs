@@ -11,14 +11,7 @@ namespace DXDecompiler.DX9Shader
 		{
 			RegisterKey = declInstruction.GetParamRegisterKey(1);
 			_semantic = declInstruction.GetDeclSemantic();
-			if(_semantic != null && _semantic.Equals("vFace", StringComparison.OrdinalIgnoreCase))
-			{
-				MaskedLength = 1;
-			}
-			else
-			{
-				MaskedLength = declInstruction.GetDestinationMaskedLength();
-			}
+			MaskedLength = declInstruction.GetDestinationMaskedLength();
 		}
 
 		public RegisterDeclaration(RegisterKey registerKey, int maskedLength = 4, string semantic = null)
@@ -43,10 +36,6 @@ namespace DXDecompiler.DX9Shader
 		{
 			get
 			{
-				if(Name.Equals("vface", StringComparison.OrdinalIgnoreCase))
-				{
-					return "float";
-				}
 				switch(MaskedLength)
 				{
 					case 1:
